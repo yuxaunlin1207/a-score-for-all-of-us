@@ -1,0 +1,680 @@
+==============================================================================
+WORKFLOW.txt
+A Score for All of Us — audience web instrument (QR code -> phone -> sound)
+for string octet and audience
+
+Repository:        a-score-for-all-of-us
+Score deadline:    Sun Nov 1, 2026
+v1.0 (portfolio):  Mon Nov 9, 2026   — instrument + demo, no live concert yet
+v1.1 (premiere):   Mon Nov 30, 2026  — adds live "conductor" cues
+==============================================================================
+
+CONTENTS
+  1. The big picture: what a web instrument actually is
+  2. Architecture: what we build, and in which version
+  3. Tech stack and working environment (Vim + terminal)
+  4. Decisions (made Oct 28)
+  5. Dated schedule (Oct 28 - Nov 30)
+  6. Phase-by-phase instructions
+  7. Repository structure (professional open-source layout)
+  8. Testing checklist (real phones)
+  9. Premiere checklist (Nov 30)
+ 10. Portfolio packaging for applications
+ 11. Licensing and rights
+ 12. How we work together (keeping the code genuinely yours)
+ 13. Risks and fallback plans
+ 14. References and learning resources
+
+
+==============================================================================
+1. THE BIG PICTURE: WHAT A WEB INSTRUMENT ACTUALLY IS
+==============================================================================
+
+An audience member's journey:
+
+  1. They scan a QR code with their phone camera.
+  2. The QR code contains a URL
+     (https://<username>.github.io/a-score-for-all-of-us/).
+  3. The phone's browser opens that URL and downloads a web page.
+  4. The web page contains code (JavaScript) that runs ON THE PHONE.
+  5. They tap "Start" (browsers require a tap before any sound can play).
+  6. They tap, hold, or tilt the phone, and sound happens.
+
+Code that runs inside a phone's browser must be JavaScript. Python is used
+on YOUR computer only: a local test server and QR code generation. The
+instrument itself = HTML + CSS + JavaScript.
+
+What you already bring:
+  - p5.js experience: p5.js IS JavaScript.
+  - COMS W3157: command line, Git, Make, separate compilation, pointers,
+    structs, debugging discipline. See Section 3 for how these transfer.
+
+The browser's built-in sound engine is the Web Audio API. Tone.js sits on
+top of it and gives you musical concepts (synths, notes, envelopes,
+effects) instead of raw signal plumbing.
+
+
+==============================================================================
+2. ARCHITECTURE: WHAT WE BUILD, AND IN WHICH VERSION
+==============================================================================
+
+v1.0 — ARCHITECTURE A, "every phone is an instrument"   (due Nov 9)
+------------------------------------------------------------------
+  Each phone does everything itself: screen + sound. No server.
+
+    [phone] --plays sound itself
+    [phone] --plays sound itself
+    [phone] --plays sound itself
+
+  Hosting: GitHub Pages (free, HTTPS, permanent URL).
+  Section changes: DEMO MODE. The person holding the phone advances
+  sections with an on-screen control. This is exactly what an application
+  reviewer needs, because there is no conductor when they try it.
+
+v1.1 — ARCHITECTURE C, A + a "conductor" layer           (by Nov 30)
+------------------------------------------------------------------
+  Same instrument, plus a conductor page that only you (or a performer)
+  open. Pressing "Section 2" there sends a small message through a
+  real-time relay, and every audience phone switches its screen cue and
+  sound set.
+
+    [conductor page] --"section 2"--> [real-time relay] --> [all phones]
+
+  Sound still comes from each phone. Only the section number travels over
+  the network. Demo mode stays available for the online version.
+
+  The choice of relay (a hosted real-time service vs. a small server you
+  run) is decided at the start of Phase 7, not now.
+
+THE ONE DESIGN RULE THAT CONNECTS v1.0 AND v1.1
+-----------------------------------------------
+  All section changes go through ONE function, for example
+  setSection(n). In v1.0, the on-screen control calls it. In v1.1, a
+  message from the conductor calls it. The rest of the code never changes
+  section any other way. If you follow this rule, v1.1 is an addition,
+  not a rewrite.
+
+Compositional note: phones are not synchronized with each other, and phone
+speakers are small and thin next to eight strings. Both are compositional
+constraints of the genre, and many pieces use them deliberately (clouds,
+textures, spatial distribution, entrances by seating area).
+
+
+==============================================================================
+3. TECH STACK AND WORKING ENVIRONMENT
+==============================================================================
+
+  Layer             Tool                         Why
+  ----------------  ---------------------------  -----------------------------
+  Page structure    HTML                         Required by every browser
+  Look / layout     CSS (plain)                  Keep it simple
+  Logic             JavaScript (plain)           Runs on the phone
+  Sound             Tone.js (from a CDN)         Musical API over Web Audio
+  Visuals (opt.)    p5.js                        You already know it
+  Editor            Vim                          Your fluent tool; no AI
+  Version control   Git (command line)           As in your 3157 labs
+  Hosting           GitHub Pages                 Free HTTPS URL from the repo
+  Local testing     python3 -m http.server       Uses your Python
+  QR code           Python "qrcode" package      Uses your Python
+  Phone debugging   Safari Web Inspector (iOS),  See errors on a real phone
+                    Chrome remote devtools
+                    (Android)
+
+  Do NOT add: frameworks (React, Vue), build tools (Webpack, Vite), npm,
+  databases, user accounts, AI code-completion plugins.
+
+WHERE TO WORK
+  Work on YOUR OWN LAPTOP:
+  - You must open the page in a browser on the same machine to hear it.
+  - Your GitHub credentials and pushes belong on your own machine.
+  (macOS includes vim. On Windows, use WSL.)
+
+DAILY SETUP (three terminal tabs or tmux panes + one browser window)
+
+  tab 1:   vim js/sounds.js                 editing
+  tab 2:   python3 -m http.server 8000      local server; leave running
+  tab 3:   git status / add / commit / push
+  browser: http://localhost:8000 with the developer console open
+
+  The cycle: edit -> save -> refresh browser -> read console. There is no
+  compile step.
+
+.vimrc ADDITIONS FOR WEB FILES (web convention is 2-space indentation)
+
+  syntax on
+  filetype plugin indent on
+  autocmd FileType html,css,javascript setlocal tabstop=2 shiftwidth=2 expandtab
+
+HOW COMS W3157 TRANSFERS
+
+  3157 concept                   In this project
+  -----------------------------  ---------------------------------------------
+  CLI, Git, lab workflow         Same workflow; commit small and often
+  Separate compilation, headers  Split code into modules (main.js,
+                                 sounds.js, ui.js) with import / export
+  Pointers, structs, heap        Mental model for JavaScript objects and
+                                 references (two names, one synth object)
+  gdb / valgrind / test drivers  Browser developer console; test checklist
+
+  New concepts you will learn here (we cover each explicitly):
+  1. Event-driven programming: the page sets things up, then WAITS for
+     events ("when tapped, do X"; "when tilted, do Y"). A C program runs
+     main() top to bottom; a web page mostly reacts.
+  2. The browser: HTML elements, the page structure (DOM), permissions
+     for audio and motion sensors.
+  3. JavaScript syntax: closer to C than to Python.
+
+
+==============================================================================
+4. DECISIONS (made Wed Oct 28)
+==============================================================================
+
+  (Your original notes are kept below. Lines starting with "->" record what
+  was resolved in discussion afterward.)
+
+  [X] D1. Architecture: A (recommended), B, or C.
+	- Decided on A.
+	-> Phased: A for v1.0 (Nov 9), A + conductor layer (C) for v1.1
+	   (Nov 30). See Section 2.
+
+  [X] D2. Performance context: Is there a live premiere before Nov 9, or is
+          the "performance" the online version + a documented demo video?
+	- The live premiere happens on Nov 30, but I need to recruit all performers by Nov 2.
+	  I will definately need an online documentation of the piece, meaning the recording
+	  of the live concert and I can possibly added anything that is not recorded well live
+	  to give online audience a better sence of what happened during the live performance
+	  after the fact.
+	-> No concert footage exists by Nov 9. The v1.0 portfolio uses a
+	   short studio demo video. Concert documentation is added after
+	   Nov 30 (Phase 8).
+
+  [X] D3. Role of the audience in the score. Pick ONE primary model:
+          (a) audience plays freely within a section's sound set
+          (b) audience follows on-screen or verbal cues from the score
+          (c) audience plays alongside acoustic performers
+	- I pick C. Audience are expected to know nothing about music, like a general phone user
+	  Age ranges from elementary school kids to elder adults who are expected to be a normal
+	  and/or occational concert audience.
+	-> Interface requirement: almost no text, large shapes, one obvious
+	   action per screen, usable by a 7-year-old and an 80-year-old.
+
+  [X] D4. Number of distinct "sound states" (sections) the instrument needs.
+          Recommendation: 3 to 5. Each state = one screen + one sound set.
+	- 4 states
+
+  [X] D5. Interaction inputs. Pick at most TWO for v1:
+          - tap / hold on screen (most reliable)
+          - drag position (x/y -> pitch/brightness)
+          - device tilt (motion sensors; needs extra permission on iPhone)
+
+	- Mostly tap / hold on screen, combiine with device tilt.
+	-> The iPhone motion-permission request is combined with the Start
+	   tap, so the audience taps only once to begin.
+
+  [X] D6. How sections change: audience taps "next", OR a timer, OR a
+          printed/spoken cue. (Automatic remote control = Architecture B/C.)
+	- a printed cue on audience's phone screen, so that I have control over the pacing.
+	-> Composer-controlled on-screen cues require the conductor layer.
+	   v1.0: demo mode (viewer advances manually).
+	   v1.1: conductor page controls every phone live.
+
+  [X] D7. Repository name and license (MIT is standard for code; you may
+          license the score separately, e.g., CC BY-NC 4.0, or all rights
+          reserved).
+	- Let's discuss it and decide what is the most ideal given our goal. (TODO TODAY!)
+	-> Repository: a-score-for-all-of-us
+	-> Code: MIT License.
+	-> Score and texts: (c) 2026 Yuxuan Lin. All rights reserved.
+	-> Concert recording: made and owned by Juilliard.
+	   See Section 11.
+
+  NEXT OUTPUT: a one-page INSTRUMENT_SPEC (Phase 1). The score and the code
+  both depend on it.
+
+
+==============================================================================
+5. DATED SCHEDULE
+==============================================================================
+
+  Fixed outside dates:
+    Sun Nov 1   Score complete
+    Mon Nov 2   All performers recruited
+    Tue Nov 3   Election Day (no 3157 class) — use for project work
+    Sun Nov 8   COMS W3157 Lab 4 due
+    Mon Nov 9   v1.0 portfolio deadline
+    Tue Nov 17  COMS W3157 Exam 2
+    Mon Nov 30  Premiere
+
+  Oct 29 - Nov 1: COMPOSITION is primary; TECH gets a short daily slot.
+  Nov 6 - 8: project work is front-loaded so Sunday Nov 8 is free for
+  Lab 4. Start Lab 4 early in the week if you can.
+
+  Date        Track       Task                                    Phase
+  ----------  ----------  --------------------------------------  -----
+  Wed Oct 28  Tech        Decisions (done); INSTRUMENT_SPEC       1
+                          Repo + GitHub Pages setup               2
+  Thu Oct 29  Compose     Score (main work)
+              Tech 1-2h   "Hello sound": one tap -> one note      3
+                          on YOUR phone via GitHub Pages
+  Fri Oct 30  Compose     Score
+              Tech 1h     Tone.js synth + envelope basics         3
+  Sat Oct 31  Compose     Score
+              Tech 1h     One complete sound state (section 1)    4
+  Sun Nov 1   Compose     SCORE COMPLETE
+  Mon Nov 2   Admin       Performers recruited
+              Tech        Remaining sound states                  4
+  Tue Nov 3   Tech        Tilt input; setSection(n); demo mode    4
+  Wed Nov 4   Tech        Interface, safety limits.               4
+                          FEATURE FREEZE at end of day
+  Thu Nov 5   Tech        Real-device testing; fix bugs           5
+  Fri Nov 6   Tech        Group test (5+ phones); record demo     5
+                          video footage
+  Sat Nov 7   Docs        README, screenshots, edit demo video,   6
+                          final QR, tag v1.0.0
+  Sun Nov 8   Lab 4       Project: no new work. Fixes only if
+                          something is broken.
+  Mon Nov 9   Buffer      Final review; send links                6
+  ----------  ----------  --------------------------------------  -----
+  Nov 10-14   Tech        v1.1 conductor layer: design + build    7
+  Nov 15-17   3157        Exam 2 preparation; project paused
+  Nov 18-24   Tech        v1.1 testing with many phones           7
+  Nov 25-29   Rehearsal   Rehearse with octet + test audience     7
+  Mon Nov 30  Premiere                                            9
+  Dec         Docs        Concert documentation; tag v1.1.x       8
+
+  If you fall behind: cut features, never cut testing or documentation.
+
+
+==============================================================================
+6. PHASE-BY-PHASE INSTRUCTIONS
+==============================================================================
+
+------------------------------------------------------------------------------
+PHASE 1 — INSTRUMENT SPEC (Oct 28)
+------------------------------------------------------------------------------
+Write docs/INSTRUMENT_SPEC.md. Plain language. For each of the 4 states:
+
+  State name:        e.g. "1 - Rain"
+  Screen shows:      e.g. one large circle; background dark blue
+  Input:             e.g. tap = short note; hold = sustained tone;
+                     tilt left/right = brightness
+  Sound result:      e.g. short plucked tone, random pitch from
+                     [C5 D5 F5 G5 A5], soft attack, 1.5 s decay
+  Density limit:     e.g. max 1 note per 150 ms per phone
+  Relation to octet: what the strings do while the audience plays
+  Ends when:         conductor cue (v1.1) / demo control (v1.0)
+
+Also list: target duration, expected audience size, required phone volume,
+any visual cue the score relies on.
+
+DONE WHEN: you could hand the spec to another programmer and they would
+build the same instrument.
+
+------------------------------------------------------------------------------
+PHASE 2 — SETUP (Oct 28)
+------------------------------------------------------------------------------
+  [ ] On your laptop: "git --version" and "vim --version" both work.
+  [ ] Add the .vimrc lines from Section 3.
+  [ ] GitHub account with 2-factor authentication enabled.
+  [ ] Authentication for pushing from the terminal (SSH key or the
+      GitHub CLI), set up once.
+  [ ] Create public repository "a-score-for-all-of-us" on GitHub, with a
+      README and the MIT License (GitHub offers both when creating).
+  [ ] git clone it to your laptop.
+  [ ] Enable GitHub Pages: Settings -> Pages -> Deploy from branch ->
+      main -> / (root).
+  [ ] Confirm https://<username>.github.io/a-score-for-all-of-us/ loads.
+  [ ] In your editor or AI settings: no AI code completion for this
+      project.
+
+DONE WHEN: you can edit a file in Vim, commit, push, and see the change
+online within about a minute.
+
+------------------------------------------------------------------------------
+PHASE 3 — FIRST SOUND ON A REAL PHONE (Oct 29-30)
+------------------------------------------------------------------------------
+Goal: the smallest possible instrument. One page, one button, one note.
+
+  Steps (you write each file; I explain each concept):
+  [ ] Create index.html with a single "Start" button.
+  [ ] Load Tone.js from a CDN with a <script> tag.
+  [ ] Create js/main.js. On button tap: start audio, play one note.
+  [ ] Test locally (tab 2: python3 -m http.server 8000).
+  [ ] Commit and push. Open the GitHub Pages URL on your phone.
+  [ ] Test on iPhone with the silent switch ON and OFF. Record the result.
+
+  Concepts you must understand by the end (understand, not memorize):
+    - Event listeners: code that waits for a tap (the event-driven model)
+    - Why sound only starts after a user tap (autoplay policy)
+    - What an audio context is
+    - Synth, envelope (attack/decay/sustain/release), destination
+      (speaker output) — you know these musically already
+    - Where to see errors (browser console)
+
+DONE WHEN: you tap a button on your own phone, via the public URL, and
+hear a note.
+
+------------------------------------------------------------------------------
+PHASE 4 — BUILD THE INSTRUMENT (Oct 31, Nov 2-4)
+------------------------------------------------------------------------------
+Build in this order. Commit after every step that works.
+
+  [ ] 4.1  One sound state fully working (section 1 of the spec).
+  [ ] 4.2  Code structure: one JavaScript object per sound state, each
+           with the same shape (e.g. start, stop, onTap, onTilt). Adding a
+           state = adding one object, not rewriting.
+  [ ] 4.3  All 4 sound states.
+  [ ] 4.4  Tilt input. One Start tap both starts audio and requests the
+           iPhone motion permission.
+  [ ] 4.5  setSection(n): the ONLY place sections change (Section 2).
+  [ ] 4.6  Demo mode: an on-screen control that calls setSection(n).
+  [ ] 4.7  Interface for a general audience: large touch targets, high
+           contrast, almost no text, readable in a dark hall, portrait
+           orientation.
+  [ ] 4.8  Safety: limiter before output, note-density limit, no harsh
+           high frequencies at full volume.
+  [ ] 4.9  "About" line: title, your name, one-line instructions, link to
+           the repository.
+
+FEATURE FREEZE: end of Wed Nov 4. After this, only bug fixes.
+
+DONE WHEN: the entire piece can be played start to finish on your phone in
+demo mode.
+
+------------------------------------------------------------------------------
+PHASE 5 — TESTING (Nov 5-6)
+------------------------------------------------------------------------------
+Use the checklist in Section 8 on at least one iPhone, one Android phone,
+and one older phone if you can borrow one. Then run one group test with
+5+ people scanning the QR code at the same time. Include at least one
+person who is not a musician.
+
+Record demo footage during the group test (with everyone's consent):
+someone scanning, tapping, tilting, and the sound.
+
+DONE WHEN: non-musicians can scan, start, and play without you explaining
+anything beyond what the screen says.
+
+------------------------------------------------------------------------------
+PHASE 6 — v1.0 DOCUMENTATION AND RELEASE (Nov 7, Nov 9)
+------------------------------------------------------------------------------
+See Section 10. Final step: create a GitHub release tagged v1.0.0 so the
+version you submit is frozen while you keep building v1.1.
+
+DONE WHEN: a reviewer with only the link can understand, try, and evaluate
+the work in under 5 minutes.
+
+------------------------------------------------------------------------------
+PHASE 7 — v1.1 CONDUCTOR LAYER (Nov 10-29)
+------------------------------------------------------------------------------
+  [ ] Choose the real-time relay (we compare options together first).
+  [ ] Build conductor.html: section buttons that send the section number.
+  [ ] Audience page listens for messages and calls setSection(n).
+  [ ] Fallback: if the connection fails, the phone keeps its current
+      section and shows the demo control, so the piece can continue.
+  [ ] Late arrivals: a phone that joins mid-piece jumps to the current
+      section.
+  [ ] Test with as many phones as you can gather, on cellular AND venue
+      Wi-Fi. Measure how long a cue takes to arrive.
+  [ ] Online version keeps demo mode.
+  [ ] Tag v1.1.0 before the premiere.
+
+DONE WHEN: in a rehearsal, pressing a section button changes every phone's
+screen within about a second, and the fallback works when you turn the
+relay off.
+
+------------------------------------------------------------------------------
+PHASE 8 — CONCERT DOCUMENTATION (after Nov 30)
+------------------------------------------------------------------------------
+  [ ] Obtain the recording from Juilliard, with written permission to
+      use it in your portfolio (ask early; see Section 11).
+  [ ] Supplementary material for online viewers (e.g. a screen recording
+      of a phone during each section, close-ups of audience playing).
+  [ ] Update README video and photos; tag a new release.
+
+
+==============================================================================
+7. REPOSITORY STRUCTURE
+==============================================================================
+
+  a-score-for-all-of-us/
+  |-- index.html              Audience instrument (what the QR code opens)
+  |-- conductor.html          Conductor page (added in v1.1)
+  |-- css/
+  |   `-- style.css
+  |-- js/
+  |   |-- main.js             Start-up, setSection(n), demo mode
+  |   |-- sounds.js           The 4 sound states
+  |   |-- ui.js               Screen drawing, tap / hold / tilt input
+  |   `-- network.js          Conductor messages (added in v1.1)
+  |-- assets/                 Images, icons, any audio samples
+  |-- tools/
+  |   `-- make_qr.py          Your Python QR generator
+  |-- docs/
+  |   |-- INSTRUMENT_SPEC.md
+  |   |-- DEVLOG.md           Dated notes: what you did, what you learned
+  |   |-- score/              Score excerpts (see Section 11)
+  |   `-- media/              Screenshots, demo video link, photos
+  |-- WORKFLOW.txt            This file
+  |-- README.md               Front page of the project
+  |-- LICENSE                 MIT (code only)
+  `-- CHANGELOG.md            v0.1.0 ... v1.0.0, v1.1.0
+
+  Git habits (same as your 3157 labs):
+  - Commit small and often. Message format: imperative verb + what.
+      Good:  "Add pluck synth for section 1"
+      Bad:   "stuff", "fix", "update"
+  - Never commit passwords, API keys, or personal data.
+  - Write DEVLOG.md entries in your own words daily (3-5 lines). This is
+    your evidence of process and learning.
+  - Keep course code and this project completely separate.
+
+
+==============================================================================
+8. TESTING CHECKLIST (REAL PHONES)
+==============================================================================
+
+  For each device, record: model, OS version, browser, result.
+
+  [ ] QR code opens the correct URL (scan from 1 m and from 3 m)
+  [ ] Page loads in under 3 seconds on cellular data (Wi-Fi off)
+  [ ] Start tap produces sound
+  [ ] Start tap also grants motion permission on iPhone; tilt works
+  [ ] iPhone: sound with silent switch ON (record result)
+  [ ] iPhone: sound with silent switch OFF
+  [ ] Tap, hold, and tilt each behave as the spec says, in all 4 states
+  [ ] Sound continues after 2+ minutes of play (no dropouts)
+  [ ] Screen lock, or switching apps and returning: page recovers or shows
+      "tap to restart"
+  [ ] Demo mode reaches every section
+  [ ] No distortion at maximum phone volume
+  [ ] Readable and usable in a dark room
+  [ ] A child and an older adult can use it without instructions
+  [ ] Works in Safari (iOS), Chrome (Android), and a desktop browser
+  v1.1 only:
+  [ ] Conductor cue arrives on every phone; time to arrive recorded
+  [ ] Fallback works when the relay is unreachable
+  [ ] A phone that joins late jumps to the current section
+
+  Known web-audio issues to expect:
+  - The iOS ringer/silent switch can mute web audio on some versions.
+  - Browsers suspend audio when the page goes to the background.
+  - Motion sensors on iOS require HTTPS (GitHub Pages provides it) and an
+    explicit permission tap.
+
+
+==============================================================================
+9. PREMIERE CHECKLIST (Nov 30)
+==============================================================================
+
+  [ ] QR code printed large (min. 15 cm), high contrast, in several spots
+      or projected; short URL printed underneath as backup
+  [ ] Instruction slide/handout: "1. Scan  2. Volume up  3. Silent mode
+      off  4. Tap Start"
+  [ ] Venue cellular signal and Wi-Fi tested in advance
+  [ ] Conductor device charged; who presses the cues is decided and
+      rehearsed
+  [ ] A few spare charged phones with the page already open
+  [ ] House lights level decided so screens and score are both usable
+  [ ] Confirm with Juilliard what is recorded (audio, video, angles)
+  [ ] Your own backup footage, if permitted (wide shot showing phones)
+
+
+==============================================================================
+10. PORTFOLIO PACKAGING FOR APPLICATIONS
+==============================================================================
+
+  What a reviewer (e.g., MIT Media Lab) should find within 5 minutes:
+
+  README.md sections, in this order:
+    1. Title + one-sentence description
+    2. "Try it" link (GitHub Pages URL) + QR code image
+    3. Demo video (2-3 min) + 1-2 photos/GIFs
+       (v1.0: studio demo; after Nov 30: concert documentation)
+    4. Concept: the piece; why the audience is part of the ensemble; the
+       non-musician audience as a design constraint (1-2 paragraphs)
+    5. How it works: diagram and a short description of each of the 4
+       states; v1.1 conductor layer once built
+    6. Score: excerpt; how the score and instrument relate
+    7. Technical notes: stack, browser support, known limitations
+    8. Run locally: the exact commands
+    9. Future work
+   10. Credits and acknowledgments (performers, teachers, libraries,
+       tools — see Section 12 about AI tools)
+   11. License (wording in Section 11)
+
+  Other deliverables:
+  [ ] Demo video
+  [ ] A one-paragraph project description reusable in application forms
+  [ ] Tagged release v1.0.0
+  [ ] Your portfolio page links to the repository and the video
+
+  Framing tip for research-oriented programs: describe the design
+  questions you explored (agency of the audience, notation for
+  non-musicians, accessibility across ages, distributed sound), not only
+  the features.
+
+
+==============================================================================
+11. LICENSING AND RIGHTS
+==============================================================================
+
+  (Not legal advice. For anything contractual, ask Juilliard or a lawyer.)
+
+  Code (HTML, CSS, JavaScript, Python tools):
+    MIT License, in the LICENSE file:
+    "Copyright (c) 2026 Yuxuan Lin"
+
+  Score and texts:
+    (c) 2026 Yuxuan Lin. All rights reserved.
+    Put this notice on the score and on any excerpt in the repository.
+    Publish excerpts rather than the full score.
+
+  Concert recording:
+    Made and owned by Juilliard. You own the composition; Juilliard owns
+    the recording. Ask, before Nov 30, for written permission to use the
+    recording in your portfolio and online documentation.
+
+  Third-party libraries:
+    Tone.js and p5.js are open-source; credit them in the README.
+
+  Suggested README "License" section:
+    Code in this repository is released under the MIT License (see
+    LICENSE). The musical score, texts, and media are (c) 2026 Yuxuan Lin,
+    all rights reserved, and are not covered by the MIT License. Concert
+    recordings are the property of The Juilliard School.
+
+  Also make the scope clear in practice: score excerpts and media live in
+  docs/, and the LICENSE file covers code only.
+
+
+==============================================================================
+12. HOW WE WORK TOGETHER (KEEPING THE CODE GENUINELY YOURS)
+==============================================================================
+
+  My role (tutor/co-worker): explain concepts, propose structure, point to
+  documentation, review code you wrote, help debug by asking questions and
+  explaining error messages, check documentation for clarity.
+
+  Your role: make every design decision, type every line of code that
+  ships, write all prose under your name (README, DEVLOG, statements).
+
+  Working protocol, per task:
+    1. You state the goal in one sentence ("Tapping plays a random note
+       from a scale").
+    2. I explain the concept and the relevant API, and give a small
+       illustrative example that is NOT your project code (different
+       sounds, different structure), or pseudocode.
+    3. You write your version yourself, in Vim.
+    4. You run it. If it breaks, paste the error and your code; I explain
+       the cause, you make the fix.
+    5. You commit with your own message and write 2-3 lines in DEVLOG.md.
+    6. Self-check before moving on: could you rewrite this function from
+       scratch tomorrow without looking? If not, we review it again.
+
+  Disclosure: read each program's policy on AI tools. A short honest line
+  in the README acknowledgments (that you used an AI assistant as a tutor
+  for learning JavaScript/Web Audio and for debugging explanations) is
+  standard, and protects you.
+
+
+==============================================================================
+13. RISKS AND FALLBACK PLANS
+==============================================================================
+
+  Risk                                   Fallback
+  -------------------------------------  -----------------------------------
+  Score runs past Nov 1                  Freeze spec anyway; build to spec
+  Running out of build time              Ship fewer sound states (min. 2);
+                                         keep testing + docs
+  Lab 4 collides with Nov 7-8            Start Lab 4 early in the week;
+                                         Nov 8 has no project work
+  iPhone silent-switch / audio quirks    On-screen instruction; test early
+                                         (Phase 3)
+  Motion sensors unreliable              Tilt becomes optional; tap/hold
+                                         still plays every state
+  Conductor relay fails at premiere      Phones keep current section; demo
+                                         control appears; a performer cues
+                                         sections verbally
+  Venue network poor                     Page needs only one load; only
+                                         tiny cue messages travel
+  Recording permission delayed           Your own footage (if permitted) +
+                                         demo video remain the portfolio
+
+
+==============================================================================
+14. REFERENCES AND LEARNING RESOURCES
+==============================================================================
+
+  Core documentation
+  - MDN Web Audio API guide:
+      https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
+  - MDN "Using the Web Audio API":
+      https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Using_Web_Audio_API
+  - MDN "Introduction to events" (the event-driven model):
+      https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Building_blocks/Events
+  - MDN JavaScript modules (import / export):
+      https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules
+  - MDN DeviceOrientation events (tilt):
+      https://developer.mozilla.org/en-US/docs/Web/API/Window/deviceorientation_event
+  - Tone.js website, docs, and examples:  https://tonejs.github.io/
+  - p5.js reference:                      https://p5js.org/reference/
+  - GitHub Pages docs:                    https://docs.github.com/pages
+  - Choose a license:                     https://choosealicense.com/
+  - Python qrcode package:                https://pypi.org/project/qrcode/
+  - Keep a Changelog:                     https://keepachangelog.com/
+  - Jae Woo Lee's Git tutorial (from your 3157 course site)
+
+  Field context (audience participation via phones). Verify each citation
+  in the NIME archive (https://www.nime.org/archives/) before citing:
+  - Sang Won Lee & Jason Freeman — "echobo," NIME
+  - Jesse Allison et al. — NexusUI and distributed web-based performance
+  - IRCAM "Soundworks" framework (collective mobile web audio)
+  - Stanford Mobile Phone Orchestra (MoPhO)
+  - Search NIME and the Web Audio Conference (WAC) proceedings for:
+    "audience participation", "mobile web audio", "distributed
+    performance"
+
+==============================================================================
+END OF WORKFLOW.txt
+==============================================================================
