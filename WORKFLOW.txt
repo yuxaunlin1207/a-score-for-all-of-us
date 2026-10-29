@@ -313,18 +313,18 @@ build the same instrument.
 ------------------------------------------------------------------------------
 PHASE 2 — SETUP (Oct 28)
 ------------------------------------------------------------------------------
-  [ ] On your laptop: "git --version" and "vim --version" both work.
-  [ ] Add the .vimrc lines from Section 3.
-  [ ] GitHub account with 2-factor authentication enabled.
-  [ ] Authentication for pushing from the terminal (SSH key or the
+  [X] On your laptop: "git --version" and "vim --version" both work.
+  [X] Add the .vimrc lines from Section 3.
+  [X] GitHub account with 2-factor authentication enabled.
+  [X] Authentication for pushing from the terminal (SSH key or the
       GitHub CLI), set up once.
-  [ ] Create public repository "a-score-for-all-of-us" on GitHub, with a
+  [X] Create public repository "a-score-for-all-of-us" on GitHub, with a
       README and the MIT License (GitHub offers both when creating).
-  [ ] git clone it to your laptop.
-  [ ] Enable GitHub Pages: Settings -> Pages -> Deploy from branch ->
+  [X] git clone it to your laptop.
+  [X] Enable GitHub Pages: Settings -> Pages -> Deploy from branch ->
       main -> / (root).
-  [ ] Confirm https://<username>.github.io/a-score-for-all-of-us/ loads.
-  [ ] In your editor or AI settings: no AI code completion for this
+  [X] Confirm https://<username>.github.io/a-score-for-all-of-us/ loads.
+  [X] In your editor or AI settings: no AI code completion for this
       project.
 
 DONE WHEN: you can edit a file in Vim, commit, push, and see the change
