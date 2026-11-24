@@ -1,0 +1,27 @@
+/* Light background: VexFlow draws notation in black.
+   No side padding on body: the score is drawn at full window width. */
+body {
+    margin: 0;
+    padding-top: 1.5rem;
+    background: #fff;
+    color: #111;
+    font-family: system-ui, sans-serif;
+}
+
+#page, #text {
+    padding: 0 2rem;
+}
+
+/* The sentence is the focus; the page number stays in the background. */
+#page {
+    margin: 0;
+    font-size: 1rem;
+    color: #777;
+}
+
+#text {
+    margin: 0.75rem 0 1rem;
+    font-size: 2.25rem;
+    line-height: 1.25;
+    font-weight: 500;
+}
