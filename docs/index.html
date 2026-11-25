@@ -5,7 +5,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>A Score for All of Us</title>
         <link rel="icon" href="data:,">
-        <link rel="stylesheet" href="style.css">
+        <style>
+                .color  { width: 4rem; height: 4rem; margin: 0.3rem; border: 3px solid transparent; border-radius: 50%; }
+                .chosen { border-color: black; transform: scale(1.15); }
+        </style>
     </head>
     <body>
         <h1>A Score for All of Us</h1>
@@ -25,19 +28,19 @@
         </div>
 
         <div id="voteScreen" hidden>
-            <p class="instructions">What color do you associate with the following sentence
+            <p>What color do you associate with the following sentence 
             as it unfolds within the story you’re experiencing?
             </p>
             <p id="voteText"></p>
             <p id="countdown"></p>
             <div id="colors">
-                <button class="color" aria-label="Red"    data-color="Red"    style="background:#d62828"></button>
-                <button class="color" aria-label="Orange" data-color="Orange" style="background:#f77f00"></button>
-                <button class="color" aria-label="Yellow" data-color="Yellow" style="background:#fcbf49"></button>
-                <button class="color" aria-label="Green"  data-color="Green"  style="background:#2a9d8f"></button>
-                <button class="color" aria-label="Blue"   data-color="Blue"   style="background:#1d4ed8"></button>
-                <button class="color" aria-label="Indigo" data-color="Indigo" style="background:#3a0ca3"></button>
-                <button class="color" aria-label="Violet" data-color="Violet" style="background:#7b2cbf"></button>
+                <button class="color" data-color="Red"    style="background:#d62828"></button>
+                <button class="color" data-color="Orange" style="background:#f77f00"></button>
+                <button class="color" data-color="Yellow" style="background:#fcbf49"></button>
+                <button class="color" data-color="Green"  style="background:#2a9d8f"></button>
+                <button class="color" data-color="Blue"   style="background:#1d4ed8"></button>
+                <button class="color" data-color="Indigo" style="background:#3a0ca3"></button>
+                <button class="color" data-color="Violet" style="background:#7b2cbf"></button>
             </div>
         </div>
 
@@ -49,7 +52,7 @@
             <p>Oops... The piece has started. Please sit back and enjoy the performance. Thank you!</p>
         </div>
 
-        <script src="../config.js"></script>
+        <script src="config.js"></script>
         <script src="audience.js"></script>
     </body>
 </html>
