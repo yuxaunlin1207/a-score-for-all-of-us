@@ -1,0 +1,95 @@
+/* Dark by default: phones are used in a darkened concert hall. */
+:root {
+    color-scheme: dark;
+    --bg: #111;
+    --fg: #eee;
+    --muted: #999;
+    --gap: 0.75rem;
+}
+
+* { box-sizing: border-box; }
+
+/* Without this, any display rule below would override the hidden attribute. */
+[hidden] { display: none !important; }
+
+body {
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem;
+    max-width: 40rem;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: system-ui, sans-serif;
+    font-size: 1.125rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
+h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem;
+}
+
+button {
+    font: inherit;
+    touch-action: manipulation;   /* no double-tap zoom */
+    cursor: pointer;
+}
+
+/* Join screen */
+#yes, #no {
+    display: block;
+    width: 100%;
+    margin: 0.75rem 0;
+    padding: 1rem;
+    border: 2px solid var(--fg);
+    border-radius: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+#yes { background: var(--fg); color: var(--bg); }
+#no  { background: transparent; color: var(--fg); }
+
+/* Vote screen: the sentence is the focus; instructions stay in the background. */
+.instructions {
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+#voteText {
+    font-size: 1.75rem;
+    line-height: 1.3;
+    font-weight: 500;
+    margin: 1.25rem 0;
+}
+
+#countdown {
+    font-size: 2rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    margin: 0.5rem 0 1rem;
+}
+
+/* Squares wrap to fit the screen: 3 per row on a portrait phone,
+   one row in landscape. Sized by width and height so all 7 stay visible. */
+#colors {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--gap);
+}
+
+.color {
+    width: 26vw;   /* fallback for browsers without svh */
+    width: clamp(3rem, min(26vw, 13svh), 9rem);
+    aspect-ratio: 1;
+    border: 1px solid rgb(255 255 255 / 0.2);
+    border-radius: 0.25rem;
+    transition: transform 0.1s;
+}
+
+.chosen {
+    outline: 4px solid var(--fg);
+    outline-offset: 3px;
+    transform: scale(1.05);
+}
